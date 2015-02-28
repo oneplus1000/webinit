@@ -4,31 +4,25 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	//"io/ioutil"
 	"log"
 	"net/http"
 )
 
 type WebInit struct {
-	funcmap      template.FuncMap
-	cahceTmpls   map[string]*template.Template
+	funcmap template.FuncMap
+
 	setupinfo    *SetupInfo
 	ctrls        map[string]IController
 	jsbundlemap  map[string]([]string)
 	cssbundlemap map[string]([]string)
+
+	viewinfos []ViewInfo
+	views     map[string]*template.Template
 }
 
 func (me *WebInit) Setup(setupinfo *SetupInfo) {
 	me.setupinfo = setupinfo
-}
-
-func (me *WebInit) GetTmpl(name string) (*template.Template, error) {
-	for key, val := range me.cahceTmpls {
-		if key == name {
-			return val, nil
-		}
-	}
-	return nil, errors.New("no template found  ( name = " + name + ")")
 }
 
 func (me *WebInit) RegitFunc(fnname string, fn interface{}) {
@@ -38,21 +32,38 @@ func (me *WebInit) RegitFunc(fnname string, fn interface{}) {
 	me.funcmap[fnname] = fn
 }
 
-func (me *WebInit) RegitTmpl(name string, view string) {
-	if me.cahceTmpls == nil {
-		me.cahceTmpls = make(map[string]*template.Template)
+func (me *WebInit) RegitView(vname string, startTmplName string, tmplfiles []string) {
+	for _, vinfo := range me.viewinfos {
+		if vinfo.VName == vname {
+			log.Panicf("dup view name %s\n", vname)
+			return
+		}
 	}
 
-	b, err := ioutil.ReadFile(me.setupinfo.RootFolder + "/views/" + view + ".html")
-	if err != nil {
-		log.Panicf("%s\n", err.Error())
-		return
+	me.viewinfos = append(me.viewinfos, ViewInfo{
+		VName:         vname,
+		StartTmplName: startTmplName,
+		TmplFiles:     tmplfiles,
+	})
+}
+
+func (me *WebInit) View(vname string) (*template.Template, error) {
+
+	for key, val := range me.views {
+		if key == vname {
+			return val, nil
+		}
 	}
-	me.cahceTmpls[name], err = template.New(name).Funcs(me.funcmap).Parse(string(b))
-	if err != nil {
-		log.Panicf("%s\n", err.Error())
-		return
+	return nil, errors.New("no view found  ( vname = " + vname + ")")
+}
+
+func (me *WebInit) ViewInfo(vname string) (*ViewInfo, error) {
+	for _, val := range me.viewinfos {
+		if val.VName == vname {
+			return &val, nil
+		}
 	}
+	return nil, errors.New("no viewinfo found  ( vname = " + vname + ")")
 }
 
 func (me *WebInit) RegistCtrl(ctrl IController, names ...string) {
@@ -80,7 +91,31 @@ func (me *WebInit) RegitCssBundle(name string, cssfiles []string) {
 
 func (me *WebInit) ListenAndServe() {
 	me.bindCtrls()
+	//me.bindTmpls()
+	me.bindViews()
 	http.ListenAndServe(me.setupinfo.Addr, nil)
+}
+
+func (me *WebInit) bindViews() {
+	if me.views == nil {
+		me.views = make(map[string]*template.Template)
+	}
+
+	for _, vinfo := range me.viewinfos {
+		vname := vinfo.VName
+		tmplfiles := vinfo.TmplFiles
+		var filepaths []string
+		for _, tmplfile := range tmplfiles {
+			filepaths = append(filepaths, me.setupinfo.RootFolder+"/tmpls/"+tmplfile)
+		}
+		t, err := template.New(vname).Funcs(me.funcmap).ParseFiles(filepaths...)
+		if err != nil {
+			log.Panicf("error %s\n", err.Error())
+			return
+		}
+		me.views[vname] = t
+	}
+
 }
 
 func (me *WebInit) bindCtrls() {

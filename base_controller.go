@@ -14,19 +14,21 @@ func (me *BaseController) Init(winit *WebInit) {
 	me.winit = winit
 }
 
-func (me *BaseController) Render(w http.ResponseWriter, tmplname string, data interface{}) {
+func (me *BaseController) Render(w http.ResponseWriter, viewname string, data interface{}) {
 
-	tmpl, err := me.winit.GetTmpl(tmplname)
+	view, err := me.winit.View(viewname)
 	if err != nil {
 		log.Printf("%s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = tmpl.ExecuteTemplate(w, tmplname, data)
+	viewinfo, err := me.winit.ViewInfo(viewname)
+	err = view.ExecuteTemplate(w, viewinfo.StartTmplName, data)
 	if err != nil {
 		log.Printf("%s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 }
