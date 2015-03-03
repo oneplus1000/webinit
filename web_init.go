@@ -93,7 +93,10 @@ func (me *WebInit) ListenAndServe() {
 	me.bindCtrls()
 	//me.bindTmpls()
 	me.bindViews()
-	http.ListenAndServe(me.setupinfo.Addr, nil)
+	err := http.ListenAndServe(me.setupinfo.Addr, nil)
+	if err != nil {
+		log.Panicf("%s\n", err.Error())
+	}
 }
 
 func (me *WebInit) bindViews() {
