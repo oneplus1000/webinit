@@ -139,3 +139,7 @@ func (me *WebInit) bindCtrls() {
 		}
 	}
 }
+
+func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
+
+}
