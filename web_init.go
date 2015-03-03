@@ -17,8 +17,9 @@ type WebInit struct {
 	jsbundlemap  map[string]([]string)
 	cssbundlemap map[string]([]string)
 
-	viewinfos []ViewInfo
-	views     map[string]*template.Template
+	viewinfos       []ViewInfo
+	views           map[string]*template.Template
+	handlerSwitcher HandlerSwitch
 }
 
 func (me *WebInit) Setup(setupinfo *SetupInfo) {
@@ -134,12 +135,19 @@ func (me *WebInit) bindCtrls() {
 		methods := c.Methods()
 		for mname, m := range methods {
 			pattern := fmt.Sprintf("%s/%s", cname, mname)
-			http.HandleFunc(pattern, m)
+			http.HandleFunc(pattern, me.globalHandleFunc)
+			//me.httpSwitcher[pattern] = m
+			me.handlerSwitcher.SetHandler(pattern, m)
 			fmt.Printf("regit controller %s\n", pattern)
 		}
 	}
 }
 
-func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
-
+func (me *WebInit) globalHandleFunc(w http.ResponseWriter, r *http.Request) {
+	handlerFunc, err := me.handlerSwitcher.Handler(r.RequestURI)
+	if err != nil {
+		fmt.Printf("page %s not found\n", r.RequestURI)
+		return
+	}
+	handlerFunc(w, r)
 }
