@@ -17,9 +17,8 @@ type WebInit struct {
 	jsbundlemap  map[string]([]string)
 	cssbundlemap map[string]([]string)
 
-	viewinfos       []ViewInfo
-	views           map[string]*template.Template
-	handlerSwitcher HandlerSwitch
+	viewinfos map[string]ViewInfo
+	views     map[string]*template.Template
 }
 
 func (me *WebInit) Setup(setupinfo *SetupInfo) {
@@ -34,36 +33,36 @@ func (me *WebInit) RegitFunc(fnname string, fn interface{}) {
 }
 
 func (me *WebInit) RegitView(vname string, startTmplName string, tmplfiles []string) {
-	for _, vinfo := range me.viewinfos {
-		if vinfo.VName == vname {
-			log.Panicf("dup view name %s\n", vname)
-			return
-		}
+
+	if me.viewinfos == nil {
+		me.viewinfos = make(map[string]ViewInfo)
 	}
 
-	me.viewinfos = append(me.viewinfos, ViewInfo{
+	if _, ok := me.viewinfos[vname]; ok {
+		log.Panicf("dup view name %s\n", vname)
+		return
+	}
+
+	me.viewinfos[vname] = ViewInfo{
 		VName:         vname,
 		StartTmplName: startTmplName,
 		TmplFiles:     tmplfiles,
-	})
+	}
 }
 
 func (me *WebInit) View(vname string) (*template.Template, error) {
-
-	for key, val := range me.views {
-		if key == vname {
-			return val, nil
-		}
+	if view, ok := me.views[vname]; ok {
+		return view, nil
 	}
 	return nil, errors.New("no view found  ( vname = " + vname + ")")
 }
 
 func (me *WebInit) ViewInfo(vname string) (*ViewInfo, error) {
-	for _, val := range me.viewinfos {
-		if val.VName == vname {
-			return &val, nil
-		}
+
+	if vinfo, ok := me.viewinfos[vname]; ok {
+		return &vinfo, nil
 	}
+
 	return nil, errors.New("no viewinfo found  ( vname = " + vname + ")")
 }
 
@@ -135,19 +134,12 @@ func (me *WebInit) bindCtrls() {
 		methods := c.Methods()
 		for mname, m := range methods {
 			pattern := fmt.Sprintf("%s/%s", cname, mname)
-			http.HandleFunc(pattern, me.globalHandleFunc)
-			//me.httpSwitcher[pattern] = m
-			me.handlerSwitcher.SetHandler(pattern, m)
+			http.HandleFunc(pattern, m)
 			fmt.Printf("regit controller %s\n", pattern)
 		}
 	}
 }
 
-func (me *WebInit) globalHandleFunc(w http.ResponseWriter, r *http.Request) {
-	handlerFunc, err := me.handlerSwitcher.Handler(r.RequestURI)
-	if err != nil {
-		fmt.Printf("page %s not found\n", r.RequestURI)
-		return
-	}
-	handlerFunc(w, r)
+func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
+
 }
