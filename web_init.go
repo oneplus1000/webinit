@@ -19,6 +19,8 @@ type WebInit struct {
 
 	viewinfos map[string]ViewInfo
 	views     map[string]*template.Template
+
+	methodInfos map[string]MethodInfo
 }
 
 func (me *WebInit) Setup(setupinfo *SetupInfo) {
@@ -91,7 +93,6 @@ func (me *WebInit) RegitCssBundle(name string, cssfiles []string) {
 
 func (me *WebInit) ListenAndServe() {
 	me.bindCtrls()
-	//me.bindTmpls()
 	me.bindViews()
 	err := http.ListenAndServe(me.setupinfo.Addr, nil)
 	if err != nil {
@@ -129,17 +130,57 @@ func (me *WebInit) bindCtrls() {
 	})
 
 	//all controller
+	if me.methodInfos == nil {
+		me.methodInfos = make(map[string]MethodInfo)
+	}
 	for cname, c := range me.ctrls {
 		c.Init(me)
 		methods := c.Methods()
-		for mname, m := range methods {
-			pattern := fmt.Sprintf("%s/%s", cname, mname)
-			http.HandleFunc(pattern, m)
-			fmt.Printf("regit controller %s\n", pattern)
+		for mname, minfo := range methods {
+			//pattern := fmt.Sprintf("%s/%s", cname, mname)
+			patterns := me.Patterns(cname, mname)
+			for _, pattern := range patterns {
+				http.HandleFunc(pattern, me.GlobalHandleFunc)
+				err := me.addMethodInfo(pattern, minfo)
+				if err != nil {
+					log.Panicf("error %s\n", err.Error())
+					return
+				}
+				log.Printf("regit controller %s\n", pattern)
+			}
+
 		}
 	}
 }
 
-func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
+func (me *WebInit) Patterns(ctrlname string, methodname string) []string {
+	var patterns []string
+	patterns = append(patterns, fmt.Sprintf("/%s/%s", ctrlname, methodname))
+	if ctrlname == "home" && methodname == "index" {
+		patterns = append(patterns, "/")
+	} else if methodname == "index" {
+		patterns = append(patterns, "/%s", ctrlname)
+	}
+	return patterns
+}
 
+func (me *WebInit) addMethodInfo(pattern string, minfo MethodInfo) error {
+	if _, ok := me.methodInfos[pattern]; ok {
+		return errors.New("dup pattern")
+	}
+	me.methodInfos[pattern] = minfo
+	return nil
+}
+
+func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
+	pattern := r.RequestURI
+	if minfo, ok := me.methodInfos[pattern]; ok {
+		if me.setupinfo.HotReloadView {
+			me.views = nil //reset
+			me.bindViews() //re compile all templ
+		}
+		minfo.Handler(w, r)
+		return
+	}
+	fmt.Fprintf(w, "page not found")
 }
