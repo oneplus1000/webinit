@@ -35,7 +35,7 @@ func (me *BaseController) BindMethodInfo(
 	}
 }
 
-func (me *BaseController) Render(w http.ResponseWriter, viewname string, data interface{}) {
+func (me *BaseController) Render(w http.ResponseWriter, r *http.Request, viewname string, data interface{}) {
 
 	view, err := me.winit.View(viewname)
 	if err != nil {
@@ -44,8 +44,14 @@ func (me *BaseController) Render(w http.ResponseWriter, viewname string, data in
 		return
 	}
 
+	//create page model
+	var pagemodel PageModel
+	pagemodel.HttpRequest = r
+	pagemodel.Data = data
+
+	//render
 	viewinfo, err := me.winit.ViewInfo(viewname)
-	err = view.ExecuteTemplate(w, viewinfo.StartTmplName, data)
+	err = view.ExecuteTemplate(w, viewinfo.StartTmplName, pagemodel)
 	if err != nil {
 		log.Printf("%s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
