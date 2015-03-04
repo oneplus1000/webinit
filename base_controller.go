@@ -19,7 +19,7 @@ func (me *BaseController) NewMapMethodInfo() MapMethodInfo {
 }
 
 func (me *BaseController) BindMethodInfo(
-	m *map[string]MethodInfo,
+	m *MapMethodInfo,
 	name string,
 	isSessionStart bool,
 	handler http.HandlerFunc,

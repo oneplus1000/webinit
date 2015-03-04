@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	//"strings"
 	//"io/ioutil"
 	"log"
 	"net/http"
@@ -169,11 +170,11 @@ func (me *WebInit) bindCtrls() {
 
 func (me *WebInit) UrlPatterns(ctrlname string, methodname string) []string {
 	var patterns []string
-	patterns = append(patterns, fmt.Sprintf("/%s/%s", ctrlname, methodname))
+	patterns = append(patterns, fmt.Sprintf("/%s/%s/", ctrlname, methodname))
 	if ctrlname == "home" && methodname == "index" {
 		patterns = append(patterns, "/")
 	} else if methodname == "index" {
-		patterns = append(patterns, fmt.Sprintf("/%s", ctrlname))
+		patterns = append(patterns, fmt.Sprintf("/%s/", ctrlname))
 	}
 	return patterns
 }
@@ -187,14 +188,16 @@ func (me *WebInit) addMethodInfo(pattern string, minfo MethodInfo) error {
 }
 
 func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
-	pattern := r.RequestURI
+	pattern := r.URL.Path
 	if minfo, ok := me.methodInfos[pattern]; ok {
+
 		if me.setupinfo.HotReloadView {
 			me.views = nil //reset
-			me.bindViews() //re compile all templ
+			me.bindViews() //re compile all templ (depen on HotReloadView)
 		}
-		minfo.Handler(w, r)
+
+		minfo.Handler(w, r) //Go!
 		return
 	}
-	fmt.Fprintf(w, "page not found")
+	fmt.Fprintf(w, "page not found %s", pattern)
 }
