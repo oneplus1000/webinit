@@ -6,5 +6,5 @@ import (
 
 type IController interface {
 	Init(winit *WebInit)
-	Methods() map[string]MethodInfo
+	Methods() MapMethodInfo
 }

@@ -14,6 +14,10 @@ func (me *BaseController) Init(winit *WebInit) {
 	me.winit = winit
 }
 
+func (me *BaseController) NewMapMethodInfo() MapMethodInfo {
+	return make(MapMethodInfo)
+}
+
 func (me *BaseController) BindMethodInfo(
 	m *map[string]MethodInfo,
 	name string,

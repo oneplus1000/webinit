@@ -9,3 +9,5 @@ type MethodInfo struct {
 	Handler        http.HandlerFunc
 	IsSessionStart bool
 }
+
+type MapMethodInfo map[string]MethodInfo
