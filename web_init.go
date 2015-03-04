@@ -112,12 +112,26 @@ func (me *WebInit) bindViews() {
 		for _, tmplfile := range tmplfiles {
 			filepaths = append(filepaths, me.setupinfo.RootFolder+"/tmpls/"+tmplfile)
 		}
-		t, err := template.New(vname).Funcs(me.funcmap).ParseFiles(filepaths...)
+
+		delimLeft := "{{"
+		if me.setupinfo.DelimLeft != "" {
+			delimLeft = me.setupinfo.DelimLeft
+		}
+
+		delimRight := "}}"
+		if me.setupinfo.DelimRight != "" {
+			delimRight = me.setupinfo.DelimRight
+		}
+
+		tmpl, err := template.New(vname).
+			Delims(delimLeft, delimRight).
+			Funcs(me.funcmap).
+			ParseFiles(filepaths...)
 		if err != nil {
 			log.Panicf("error %s\n", err.Error())
 			return
 		}
-		me.views[vname] = t
+		me.views[vname] = tmpl
 	}
 
 }
@@ -138,7 +152,7 @@ func (me *WebInit) bindCtrls() {
 		methods := c.Methods()
 		for mname, minfo := range methods {
 			//pattern := fmt.Sprintf("%s/%s", cname, mname)
-			patterns := me.Patterns(cname, mname)
+			patterns := me.UrlPatterns(cname, mname)
 			for _, pattern := range patterns {
 				http.HandleFunc(pattern, me.GlobalHandleFunc)
 				err := me.addMethodInfo(pattern, minfo)
@@ -153,13 +167,13 @@ func (me *WebInit) bindCtrls() {
 	}
 }
 
-func (me *WebInit) Patterns(ctrlname string, methodname string) []string {
+func (me *WebInit) UrlPatterns(ctrlname string, methodname string) []string {
 	var patterns []string
 	patterns = append(patterns, fmt.Sprintf("/%s/%s", ctrlname, methodname))
 	if ctrlname == "home" && methodname == "index" {
 		patterns = append(patterns, "/")
 	} else if methodname == "index" {
-		patterns = append(patterns, "/%s", ctrlname)
+		patterns = append(patterns, fmt.Sprintf("/%s", ctrlname))
 	}
 	return patterns
 }
