@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	//"strings"
-	//"io/ioutil"
+	"bytes"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -22,6 +23,8 @@ type WebInit struct {
 	views     map[string]*template.Template
 
 	methodInfos map[string]MethodInfo
+
+	jstmplinfos map[string]string
 }
 
 func (me *WebInit) Setup(setupinfo *SetupInfo) {
@@ -85,6 +88,13 @@ func (me *WebInit) RegitJsBundle(name string, jsfiles []string) {
 	me.jsbundlemap[name] = jsfiles
 }
 
+func (me *WebInit) RegitJsTmpl(name string, file string) {
+	if me.jstmplinfos == nil {
+		me.jstmplinfos = make(map[string]string)
+	}
+	me.jstmplinfos[name] = file
+}
+
 func (me *WebInit) RegitCssBundle(name string, cssfiles []string) {
 	if me.cssbundlemap == nil {
 		me.cssbundlemap = make(map[string]([]string))
@@ -124,9 +134,14 @@ func (me *WebInit) bindViews() {
 			delimRight = me.setupinfo.DelimRight
 		}
 
+		//append build tmpl func
+		funcmap := me.funcmap
+		funcmap["JsBundle"] = me.JsBundle
+		funcmap["JsTmpl"] = me.JsTmpl
+
 		tmpl, err := template.New(vname).
 			Delims(delimLeft, delimRight).
-			Funcs(me.funcmap).
+			Funcs(funcmap).
 			ParseFiles(filepaths...)
 		if err != nil {
 			log.Panicf("error %s\n", err.Error())
@@ -166,6 +181,38 @@ func (me *WebInit) bindCtrls() {
 
 		}
 	}
+}
+
+func (me *WebInit) JsTmpl(data interface{}, name string) template.HTML {
+
+	if file, ok := me.jstmplinfos[name]; ok {
+		path := me.setupinfo.RootFolder + file
+		content, err := ioutil.ReadFile(path)
+		if err != nil {
+			log.Printf("[ERROR] JsTmpl %s err=%s", name, err.Error())
+			return template.HTML("<!--[ERROR] JsTmpl " + name + " err=" + err.Error() + "  -->")
+		}
+		var buff bytes.Buffer
+		buff.WriteString("\n<script id='" + name + "' type='text/template' >\n")
+		buff.Write(content)
+		buff.WriteString("\n</script>\n")
+		return template.HTML(buff.String())
+	}
+	log.Printf("[ERROR] not found JsTmpl %s ", name)
+	return template.HTML("<!--[ERROR] not found JsTmpl " + name + " -->")
+}
+
+func (me *WebInit) JsBundle(data interface{}, name string) template.HTML {
+	//TODO  next time make compress js
+	if files, ok := me.jsbundlemap[name]; ok {
+		var buff bytes.Buffer
+		for _, file := range files {
+			buff.Write([]byte(fmt.Sprintf("<script type=\"text/javascript\" src=\"%s\" ></script>", file)))
+		}
+		return template.HTML(buff.String())
+	}
+	log.Printf("[ERROR] not found JsBundle %s ", name)
+	return template.HTML("<!-- not found JsBundle " + name + " -->")
 }
 
 func (me *WebInit) UrlPatterns(ctrlname string, methodname string) []string {

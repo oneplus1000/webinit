@@ -21,7 +21,6 @@ func (me *BaseController) NewMapMethodInfo() MapMethodInfo {
 func (me *BaseController) BindMethodInfo(
 	m *MapMethodInfo,
 	name string,
-	isSessionStart bool,
 	handler http.HandlerFunc,
 ) {
 	if _, ok := (*m)[name]; ok {
@@ -29,9 +28,8 @@ func (me *BaseController) BindMethodInfo(
 		return
 	}
 	(*m)[name] = MethodInfo{
-		Name:           name,
-		IsSessionStart: isSessionStart,
-		Handler:        handler,
+		Name:    name,
+		Handler: handler,
 	}
 }
 
