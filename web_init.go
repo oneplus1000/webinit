@@ -207,7 +207,7 @@ func (me *WebInit) JsBundle(data interface{}, name string) template.HTML {
 	if files, ok := me.jsbundlemap[name]; ok {
 		var buff bytes.Buffer
 		for _, file := range files {
-			buff.Write([]byte(fmt.Sprintf("<script type=\"text/javascript\" src=\"%s\" ></script>", file)))
+			buff.Write([]byte(fmt.Sprintf("<script type=\"text/javascript\" src=\"%s\" ></script>\n", file)))
 		}
 		return template.HTML(buff.String())
 	}
