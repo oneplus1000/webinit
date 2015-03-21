@@ -31,6 +31,7 @@ func (me *WebInit) Setup(setupinfo *SetupInfo) {
 	me.setupinfo = setupinfo
 }
 
+//Regit template func to all template
 func (me *WebInit) RegitFunc(fnname string, fn interface{}) {
 	if me.funcmap == nil {
 		me.funcmap = make(template.FuncMap)
@@ -38,6 +39,7 @@ func (me *WebInit) RegitFunc(fnname string, fn interface{}) {
 	me.funcmap[fnname] = fn
 }
 
+//Regist view
 func (me *WebInit) RegitView(vname string, startTmplName string, tmplfiles []string) {
 
 	if me.viewinfos == nil {
@@ -246,5 +248,7 @@ func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
 		minfo.Handler(w, r) //Go!
 		return
 	}
+	w.WriteHeader(404)
 	fmt.Fprintf(w, "page not found %s", pattern)
+	log.Printf("page not found %s", pattern)
 }
