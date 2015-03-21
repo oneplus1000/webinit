@@ -1,6 +1,7 @@
 package webinit
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	//"html/template"
@@ -56,4 +57,9 @@ func (me *BaseController) Render(w http.ResponseWriter, r *http.Request, viewnam
 		return
 	}
 
+}
+
+func (me *BaseController) WriteHttpErr(w http.ResponseWriter, r *http.Request, errcode int, errmsg string) {
+	w.WriteHeader(errcode)
+	fmt.Fprintf(w, "err: %s", errmsg)
 }
