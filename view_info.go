@@ -1,7 +1,6 @@
 package webinit
 
 type ViewInfo struct {
-	VName         string
-	StartTmplName string
+	VName, StartTmplName string
 	TmplFiles     []string
 }
