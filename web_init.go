@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"strings"
 	//"strings"
 	"bytes"
 	"io/ioutil"
@@ -204,12 +205,17 @@ func (me *WebInit) JsTmpl(data interface{}, name string) template.HTML {
 	return template.HTML("<!--[ERROR] not found JsTmpl " + name + " -->")
 }
 
-func (me *WebInit) JsBundle(data interface{}, name string) template.HTML {
-	//TODO  next time make compress js
+func (me *WebInit) JsBundle(data interface{}, name string) template.HTML { //TODO  next time make compress js
+
+	jsversion := strings.TrimSpace(me.setupinfo.JsVersion)
+	if jsversion == "" {
+		jsversion = "0"
+	}
+
 	if files, ok := me.jsbundlemap[name]; ok {
 		var buff bytes.Buffer
 		for _, file := range files {
-			buff.Write([]byte(fmt.Sprintf("<script type=\"text/javascript\" src=\"%s\" ></script>\n", file)))
+			buff.Write([]byte(fmt.Sprintf("<script type=\"text/javascript\" src=\"%s?jsv=%s\" ></script>\n", file, jsversion)))
 		}
 		return template.HTML(buff.String())
 	}

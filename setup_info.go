@@ -8,4 +8,5 @@ type SetupInfo struct {
 	//true - load template where reload page (recommand when develop)
 	//false - load template only one time when  app stating (recommand when deploy)
 	HotReloadView bool
+	JsVersion     string
 }
