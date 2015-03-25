@@ -137,10 +137,11 @@ func (me *WebInit) bindViews() {
 			delimRight = me.setupinfo.DelimRight
 		}
 
-		//append build tmpl func
+		//install build-in tmpl func
 		funcmap := me.funcmap
 		funcmap["JsBundle"] = me.JsBundle
 		funcmap["JsTmpl"] = me.JsTmpl
+		funcmap["CssBundle"] = me.CssBundle
 
 		tmpl, err := template.New(vname).
 			Delims(delimLeft, delimRight).
@@ -203,6 +204,18 @@ func (me *WebInit) JsTmpl(data interface{}, name string) template.HTML {
 	}
 	log.Printf("[ERROR] not found JsTmpl %s ", name)
 	return template.HTML("<!--[ERROR] not found JsTmpl " + name + " -->")
+}
+
+func (me *WebInit) CssBundle(data interface{}, name string) template.HTML {
+
+	if files, ok := me.cssbundlemap[name]; ok {
+		var buff bytes.Buffer
+		for _, file := range files {
+			buff.Write([]byte(fmt.Sprintf("<link rel=\"stylesheet\" href=\"%s?cssv=%s\" ></link>\n", file, 0)))
+		}
+		return template.HTML(buff.String())
+	}
+	return template.HTML("<!-- not found CssBundle " + name + " -->")
 }
 
 func (me *WebInit) JsBundle(data interface{}, name string) template.HTML { //TODO  next time make compress js
