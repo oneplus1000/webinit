@@ -208,10 +208,15 @@ func (me *WebInit) JsTmpl(data interface{}, name string) template.HTML {
 
 func (me *WebInit) CssBundle(data interface{}, name string) template.HTML {
 
+	cssversion := strings.TrimSpace(me.setupinfo.CssVersion)
+	if cssversion == "" {
+		cssversion = "0"
+	}
+
 	if files, ok := me.cssbundlemap[name]; ok {
 		var buff bytes.Buffer
 		for _, file := range files {
-			buff.Write([]byte(fmt.Sprintf("<link rel=\"stylesheet\" href=\"%s?cssv=%s\" ></link>\n", file, 0)))
+			buff.Write([]byte(fmt.Sprintf("<link rel=\"stylesheet\" href=\"%s?cssv=%s\" ></link>\n", file, cssversion)))
 		}
 		return template.HTML(buff.String())
 	}
