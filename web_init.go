@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"runtime"
 	"strings"
 	//"strings"
 	"bytes"
@@ -268,11 +269,16 @@ func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
 			me.views = nil //reset
 			me.bindViews() //re compile all templ (depen on HotReloadView)
 		}
-
 		minfo.Handler(w, r) //Go!
 		return
 	}
 	w.WriteHeader(404)
 	fmt.Fprintf(w, "page not found %s", pattern)
 	log.Printf("page not found %s", pattern)
+}
+
+func LogPprof() {
+	m := new(runtime.MemStats)
+	runtime.ReadMemStats(m)
+	log.Printf("{ Alloc: %d,TotalAlloc: %d,HeapAlloc: %d,HeapSys: %d  ", m.Alloc, m.TotalAlloc, m.HeapAlloc, m.HeapSys)
 }
