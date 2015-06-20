@@ -36,6 +36,11 @@ func (me *BaseController) BindMethodInfo(
 
 func (me *BaseController) Render(w http.ResponseWriter, r *http.Request, viewname string, data interface{}) {
 
+	if me.winit.setupinfo.HotReloadView {
+		//re compile templ (depen on HotReloadView)
+		me.winit.reBindView(viewname)
+	}
+
 	view, err := me.winit.View(viewname)
 	if err != nil {
 		log.Printf("%s\n", err.Error())

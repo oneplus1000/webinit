@@ -115,6 +115,59 @@ func (me *WebInit) ListenAndServe() {
 	}
 }
 
+func (me *WebInit) bindView(vinfo *ViewInfo) (*template.Template, error) {
+	vname := vinfo.VName
+	tmplfiles := vinfo.TmplFiles
+	var filepaths []string
+	for _, tmplfile := range tmplfiles {
+		filepaths = append(filepaths, me.setupinfo.RootFolder+"/tmpls/"+tmplfile)
+	}
+
+	delimLeft := "{{"
+	if me.setupinfo.DelimLeft != "" {
+		delimLeft = me.setupinfo.DelimLeft
+	}
+
+	delimRight := "}}"
+	if me.setupinfo.DelimRight != "" {
+		delimRight = me.setupinfo.DelimRight
+	}
+
+	//install build-in tmpl func
+	funcmap := me.funcmap
+	funcmap["JsBundle"] = me.JsBundle
+	funcmap["JsTmpl"] = me.JsTmpl
+	funcmap["CssBundle"] = me.CssBundle
+
+	tmpl, err := template.New(vname).
+		Delims(delimLeft, delimRight).
+		Funcs(funcmap).
+		ParseFiles(filepaths...)
+	if err != nil {
+		return nil, err
+	}
+	return tmpl, nil
+}
+
+func (me *WebInit) reBindView(vname string) {
+	if me.views == nil {
+		log.Panicf("view is empty!")
+		return
+	}
+
+	if vinfo, ok := me.viewinfos[vname]; ok {
+		tmpl, err := me.bindView(&vinfo)
+		if err != nil {
+			log.Panicf("%s", err.Error())
+			return
+		}
+		me.views[vname] = tmpl
+	} else {
+		log.Panicf("view %s not found!", vname)
+		return
+	}
+}
+
 func (me *WebInit) bindViews() {
 	if me.views == nil {
 		me.views = make(map[string]*template.Template)
@@ -122,32 +175,7 @@ func (me *WebInit) bindViews() {
 
 	for _, vinfo := range me.viewinfos {
 		vname := vinfo.VName
-		tmplfiles := vinfo.TmplFiles
-		var filepaths []string
-		for _, tmplfile := range tmplfiles {
-			filepaths = append(filepaths, me.setupinfo.RootFolder+"/tmpls/"+tmplfile)
-		}
-
-		delimLeft := "{{"
-		if me.setupinfo.DelimLeft != "" {
-			delimLeft = me.setupinfo.DelimLeft
-		}
-
-		delimRight := "}}"
-		if me.setupinfo.DelimRight != "" {
-			delimRight = me.setupinfo.DelimRight
-		}
-
-		//install build-in tmpl func
-		funcmap := me.funcmap
-		funcmap["JsBundle"] = me.JsBundle
-		funcmap["JsTmpl"] = me.JsTmpl
-		funcmap["CssBundle"] = me.CssBundle
-
-		tmpl, err := template.New(vname).
-			Delims(delimLeft, delimRight).
-			Funcs(funcmap).
-			ParseFiles(filepaths...)
+		tmpl, err := me.bindView(&vinfo)
 		if err != nil {
 			log.Panicf("error %s\n", err.Error())
 			return
@@ -265,10 +293,10 @@ func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
 	pattern := r.URL.Path
 	if minfo, ok := me.methodInfos[pattern]; ok {
 
-		if me.setupinfo.HotReloadView {
+		/*if me.setupinfo.HotReloadView {
 			me.views = nil //reset
 			me.bindViews() //re compile all templ (depen on HotReloadView)
-		}
+		}*/
 		minfo.Handler(w, r) //Go!
 		return
 	}
