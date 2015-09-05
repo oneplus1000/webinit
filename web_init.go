@@ -292,11 +292,6 @@ func (me *WebInit) addMethodInfo(pattern string, minfo MethodInfo) error {
 func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
 	pattern := r.URL.Path
 	if minfo, ok := me.methodInfos[pattern]; ok {
-
-		/*if me.setupinfo.HotReloadView {
-			me.views = nil //reset
-			me.bindViews() //re compile all templ (depen on HotReloadView)
-		}*/
 		minfo.Handler(w, r) //Go!
 		return
 	}
