@@ -30,116 +30,109 @@ type WebInit struct {
 	jstmplinfos map[string]string
 }
 
-func (me *WebInit) Setup(setupinfo *SetupInfo) {
-	me.setupinfo = setupinfo
+func (w *WebInit) Setup(setupinfo *SetupInfo) {
+	w.setupinfo = setupinfo
 }
 
 //Regit template func to all template
-func (me *WebInit) RegitFunc(fnname string, fn interface{}) {
-	if me.funcmap == nil {
-		me.funcmap = make(template.FuncMap)
+func (w *WebInit) RegitFunc(fnname string, fn interface{}) {
+	if w.funcmap == nil {
+		w.funcmap = make(template.FuncMap)
 	}
-	me.funcmap[fnname] = fn
+	w.funcmap[fnname] = fn
 }
 
 //Regist view
-func (me *WebInit) RegitView(vname string, startTmplName string, tmplfiles []string) {
+func (w *WebInit) RegitView(vname string, startTmplName string, tmplfiles []string) {
 
-	if me.viewinfos == nil {
-		me.viewinfos = make(map[string]ViewInfo)
+	if w.viewinfos == nil {
+		w.viewinfos = make(map[string]ViewInfo)
 	}
 
-	if _, ok := me.viewinfos[vname]; ok {
+	if _, ok := w.viewinfos[vname]; ok {
 		log.Panicf("dup view name %s\n", vname)
 		return
 	}
 
-	me.viewinfos[vname] = ViewInfo{
+	w.viewinfos[vname] = ViewInfo{
 		VName:         vname,
 		StartTmplName: startTmplName,
 		TmplFiles:     tmplfiles,
 	}
 }
 
-func (me *WebInit) View(vname string) (*template.Template, error) {
-	if view, ok := me.views[vname]; ok {
+func (w *WebInit) View(vname string) (*template.Template, error) {
+	if view, ok := w.views[vname]; ok {
 		return view, nil
 	}
 	return nil, errors.New("no view found  ( vname = " + vname + ")")
 }
 
-func (me *WebInit) ViewInfo(vname string) (*ViewInfo, error) {
+func (w *WebInit) ViewInfo(vname string) (*ViewInfo, error) {
 
-	if vinfo, ok := me.viewinfos[vname]; ok {
+	if vinfo, ok := w.viewinfos[vname]; ok {
 		return &vinfo, nil
 	}
 
 	return nil, errors.New("no viewinfo found  ( vname = " + vname + ")")
 }
 
-func (me *WebInit) RegistCtrl(ctrl IController, names ...string) {
-	if me.ctrls == nil {
-		me.ctrls = make(map[string]IController)
+func (w *WebInit) RegistCtrl(ctrl IController, names ...string) {
+	if w.ctrls == nil {
+		w.ctrls = make(map[string]IController)
 	}
 	for _, name := range names {
-		me.ctrls[name] = ctrl
+		w.ctrls[name] = ctrl
 	}
 }
 
-func (me *WebInit) RegitJsBundle(name string, jsfiles []string) {
-	if me.jsbundlemap == nil {
-		me.jsbundlemap = make(map[string]([]string))
+func (w *WebInit) RegitJsBundle(name string, jsfiles []string) {
+	if w.jsbundlemap == nil {
+		w.jsbundlemap = make(map[string]([]string))
 	}
-	me.jsbundlemap[name] = jsfiles
+	w.jsbundlemap[name] = jsfiles
 }
 
-func (me *WebInit) RegitJsTmpl(name string, file string) {
-	if me.jstmplinfos == nil {
-		me.jstmplinfos = make(map[string]string)
+func (w *WebInit) RegitJsTmpl(name string, file string) {
+	if w.jstmplinfos == nil {
+		w.jstmplinfos = make(map[string]string)
 	}
-	me.jstmplinfos[name] = file
+	w.jstmplinfos[name] = file
 }
 
-func (me *WebInit) RegitCssBundle(name string, cssfiles []string) {
-	if me.cssbundlemap == nil {
-		me.cssbundlemap = make(map[string]([]string))
+func (w *WebInit) RegitCssBundle(name string, cssfiles []string) {
+	if w.cssbundlemap == nil {
+		w.cssbundlemap = make(map[string]([]string))
 	}
-	me.cssbundlemap[name] = cssfiles
+	w.cssbundlemap[name] = cssfiles
 }
 
-func (me *WebInit) ListenAndServe() {
-	me.bindCtrls()
-	me.bindViews()
-	err := http.ListenAndServe(me.setupinfo.Addr, nil)
+func (w *WebInit) ListenAndServe() {
+	w.bindCtrls()
+	w.bindViews()
+	err := http.ListenAndServe(w.setupinfo.Addr, nil)
 	if err != nil {
 		log.Panicf("%s\n", err.Error())
 	}
 }
 
-func (me *WebInit) bindView(vinfo *ViewInfo) (*template.Template, error) {
+func (w *WebInit) bindView(vinfo *ViewInfo) (*template.Template, error) {
 	vname := vinfo.VName
 	tmplfiles := vinfo.TmplFiles
 	var filepaths []string
 	for _, tmplfile := range tmplfiles {
-		filepaths = append(filepaths, me.setupinfo.RootFolder+"/tmpls/"+tmplfile)
+		filepaths = append(filepaths, w.setupinfo.RootFolder+"/tmpls/"+tmplfile)
 	}
 
-	delimLeft := "{{"
-	if me.setupinfo.DelimLeft != "" {
-		delimLeft = me.setupinfo.DelimLeft
-	}
-
-	delimRight := "}}"
-	if me.setupinfo.DelimRight != "" {
-		delimRight = me.setupinfo.DelimRight
-	}
+	delimLeft := w.delimLeft()
+	delimRight := w.delimRight()
 
 	//install build-in tmpl func
-	funcmap := me.funcmap
-	funcmap["JsBundle"] = me.JsBundle
-	funcmap["JsTmpl"] = me.JsTmpl
-	funcmap["JsTmplWithData"] = me.JsTmplWithData
-	funcmap["CssBundle"] = me.CssBundle
+	funcmap := w.funcmap
+	funcmap["JsBundle"] = w.JsBundle
+	funcmap["JsTmpl"] = w.JsTmpl
+	funcmap["JsTmplWithData"] = w.JsTmplWithData
+	funcmap["CssBundle"] = w.CssBundle
 
 	tmpl, err := template.New(vname).
 		Delims(delimLeft, delimRight).
@@ -151,62 +144,62 @@ func (me *WebInit) bindView(vinfo *ViewInfo) (*template.Template, error) {
 	return tmpl, nil
 }
 
-func (me *WebInit) reBindView(vname string) {
-	if me.views == nil {
+func (w *WebInit) reBindView(vname string) {
+	if w.views == nil {
 		log.Panicf("view is empty!")
 		return
 	}
 
-	if vinfo, ok := me.viewinfos[vname]; ok {
-		tmpl, err := me.bindView(&vinfo)
+	if vinfo, ok := w.viewinfos[vname]; ok {
+		tmpl, err := w.bindView(&vinfo)
 		if err != nil {
 			log.Panicf("%s", err.Error())
 			return
 		}
-		me.views[vname] = tmpl
+		w.views[vname] = tmpl
 	} else {
 		log.Panicf("view %s not found!", vname)
 		return
 	}
 }
 
-func (me *WebInit) bindViews() {
-	if me.views == nil {
-		me.views = make(map[string]*template.Template)
+func (w *WebInit) bindViews() {
+	if w.views == nil {
+		w.views = make(map[string]*template.Template)
 	}
 
-	for _, vinfo := range me.viewinfos {
+	for _, vinfo := range w.viewinfos {
 		vname := vinfo.VName
-		tmpl, err := me.bindView(&vinfo)
+		tmpl, err := w.bindView(&vinfo)
 		if err != nil {
 			log.Panicf("error %s\n", err.Error())
 			return
 		}
-		me.views[vname] = tmpl
+		w.views[vname] = tmpl
 	}
 
 }
 
-func (me *WebInit) bindCtrls() {
+func (w *WebInit) bindCtrls() {
 
 	//static file
-	http.HandleFunc("/public/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, fmt.Sprintf("%s%s", me.setupinfo.RootFolder, r.URL.Path[1:]))
+	http.HandleFunc("/public/", func(wr http.ResponseWriter, r *http.Request) {
+		http.ServeFile(wr, r, fmt.Sprintf("%s%s", w.setupinfo.RootFolder, r.URL.Path[1:]))
 	})
 
 	//all controller
-	if me.methodInfos == nil {
-		me.methodInfos = make(map[string]MethodInfo)
+	if w.methodInfos == nil {
+		w.methodInfos = make(map[string]MethodInfo)
 	}
-	for cname, c := range me.ctrls {
-		c.Init(me)
+	for cname, c := range w.ctrls {
+		c.Init(w)
 		methods := c.Methods()
 		for mname, minfo := range methods {
 			//pattern := fmt.Sprintf("%s/%s", cname, mname)
-			patterns := me.UrlPatterns(cname, mname)
+			patterns := w.UrlPatterns(cname, mname)
 			for _, pattern := range patterns {
-				http.HandleFunc(pattern, me.GlobalHandleFunc)
-				err := me.addMethodInfo(pattern, minfo)
+				http.HandleFunc(pattern, w.GlobalHandleFunc)
+				err := w.addMethodInfo(pattern, minfo)
 				if err != nil {
 					log.Panicf("error %s\n", err.Error())
 					return
@@ -218,21 +211,30 @@ func (me *WebInit) bindCtrls() {
 	}
 }
 
-func (me *WebInit) JsTmplWithData(data interface{}, name string) template.HTML {
-
+func (w *WebInit) delimLeft() string {
 	delimLeft := "{{"
-	if me.setupinfo.DelimLeft != "" {
-		delimLeft = me.setupinfo.DelimLeft
+	if w.setupinfo.DelimLeft != "" {
+		delimLeft = w.setupinfo.DelimLeft
 	}
+	return delimLeft
+}
 
+func (w *WebInit) delimRight() string {
 	delimRight := "}}"
-	if me.setupinfo.DelimRight != "" {
-		delimRight = me.setupinfo.DelimRight
+	if w.setupinfo.DelimRight != "" {
+		delimRight = w.setupinfo.DelimRight
 	}
+	return delimRight
+}
 
-	if file, ok := me.jstmplinfos[name]; ok {
+func (w *WebInit) JsTmplWithData(data interface{}, name string) template.HTML {
 
-		path := me.setupinfo.RootFolder + file
+	delimLeft := w.delimLeft()
+	delimRight := w.delimRight()
+
+	if file, ok := w.jstmplinfos[name]; ok {
+
+		path := w.setupinfo.RootFolder + file
 		filename := filepath.Base(path)
 		tmpl, err := template.New(filename).Delims(delimLeft, delimRight).ParseFiles(path)
 		if err != nil {
@@ -258,10 +260,10 @@ func (me *WebInit) JsTmplWithData(data interface{}, name string) template.HTML {
 	return template.HTML("<!--[ERROR] not found JsTmpl (JsTmplWithViewData) " + name + " -->")
 }
 
-func (me *WebInit) JsTmpl(data interface{}, name string) template.HTML {
+func (w *WebInit) JsTmpl(data interface{}, name string) template.HTML {
 
-	if file, ok := me.jstmplinfos[name]; ok {
-		path := me.setupinfo.RootFolder + file
+	if file, ok := w.jstmplinfos[name]; ok {
+		path := w.setupinfo.RootFolder + file
 		content, err := ioutil.ReadFile(path)
 		if err != nil {
 			log.Printf("[ERROR] JsTmpl %s err=%s", name, err.Error())
@@ -277,14 +279,14 @@ func (me *WebInit) JsTmpl(data interface{}, name string) template.HTML {
 	return template.HTML("<!--[ERROR] not found JsTmpl " + name + " -->")
 }
 
-func (me *WebInit) CssBundle(data interface{}, name string) template.HTML {
+func (w *WebInit) CssBundle(data interface{}, name string) template.HTML {
 
-	cssversion := strings.TrimSpace(me.setupinfo.CssVersion)
+	cssversion := strings.TrimSpace(w.setupinfo.CssVersion)
 	if cssversion == "" {
 		cssversion = "0"
 	}
 
-	if files, ok := me.cssbundlemap[name]; ok {
+	if files, ok := w.cssbundlemap[name]; ok {
 		var buff bytes.Buffer
 		for _, file := range files {
 			buff.Write([]byte(fmt.Sprintf("<link rel=\"stylesheet\" href=\"%s?cssv=%s\" ></link>\n", file, cssversion)))
@@ -294,14 +296,14 @@ func (me *WebInit) CssBundle(data interface{}, name string) template.HTML {
 	return template.HTML("<!-- not found CssBundle " + name + " -->")
 }
 
-func (me *WebInit) JsBundle(data interface{}, name string) template.HTML { //TODO  next time make compress js
+func (w *WebInit) JsBundle(data interface{}, name string) template.HTML { //TODO  next time make compress js
 
-	jsversion := strings.TrimSpace(me.setupinfo.JsVersion)
+	jsversion := strings.TrimSpace(w.setupinfo.JsVersion)
 	if jsversion == "" {
 		jsversion = "0"
 	}
 
-	if files, ok := me.jsbundlemap[name]; ok {
+	if files, ok := w.jsbundlemap[name]; ok {
 		var buff bytes.Buffer
 		for _, file := range files {
 			buff.Write([]byte(fmt.Sprintf("<script type=\"text/javascript\" src=\"%s?jsv=%s\" ></script>\n", file, jsversion)))
@@ -312,7 +314,7 @@ func (me *WebInit) JsBundle(data interface{}, name string) template.HTML { //TOD
 	return template.HTML("<!-- not found JsBundle " + name + " -->")
 }
 
-func (me *WebInit) UrlPatterns(ctrlname string, methodname string) []string {
+func (w *WebInit) UrlPatterns(ctrlname string, methodname string) []string {
 	var patterns []string
 	patterns = append(patterns, fmt.Sprintf("/%s/%s/", ctrlname, methodname))
 	if ctrlname == "home" && methodname == "index" {
@@ -323,22 +325,22 @@ func (me *WebInit) UrlPatterns(ctrlname string, methodname string) []string {
 	return patterns
 }
 
-func (me *WebInit) addMethodInfo(pattern string, minfo MethodInfo) error {
-	if _, ok := me.methodInfos[pattern]; ok {
+func (w *WebInit) addMethodInfo(pattern string, minfo MethodInfo) error {
+	if _, ok := w.methodInfos[pattern]; ok {
 		return errors.New("dup pattern")
 	}
-	me.methodInfos[pattern] = minfo
+	w.methodInfos[pattern] = minfo
 	return nil
 }
 
-func (me *WebInit) GlobalHandleFunc(w http.ResponseWriter, r *http.Request) {
+func (w *WebInit) GlobalHandleFunc(wr http.ResponseWriter, r *http.Request) {
 	pattern := r.URL.Path
-	if minfo, ok := me.methodInfos[pattern]; ok {
-		minfo.Handler(w, r) //Go!
+	if minfo, ok := w.methodInfos[pattern]; ok {
+		minfo.Handler(wr, r) //Go!
 		return
 	}
-	w.WriteHeader(404)
-	fmt.Fprintf(w, "page not found %s", pattern)
+	wr.WriteHeader(404)
+	fmt.Fprintf(wr, "page not found %s", pattern)
 	log.Printf("page not found %s", pattern)
 }
 
