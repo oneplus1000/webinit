@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"path/filepath"
 	"runtime"
 	"strings"
 	//"strings"
@@ -137,6 +138,7 @@ func (me *WebInit) bindView(vinfo *ViewInfo) (*template.Template, error) {
 	funcmap := me.funcmap
 	funcmap["JsBundle"] = me.JsBundle
 	funcmap["JsTmpl"] = me.JsTmpl
+	funcmap["JsTmplWithData"] = me.JsTmplWithData
 	funcmap["CssBundle"] = me.CssBundle
 
 	tmpl, err := template.New(vname).
@@ -214,6 +216,46 @@ func (me *WebInit) bindCtrls() {
 
 		}
 	}
+}
+
+func (me *WebInit) JsTmplWithData(data interface{}, name string) template.HTML {
+
+	delimLeft := "{{"
+	if me.setupinfo.DelimLeft != "" {
+		delimLeft = me.setupinfo.DelimLeft
+	}
+
+	delimRight := "}}"
+	if me.setupinfo.DelimRight != "" {
+		delimRight = me.setupinfo.DelimRight
+	}
+
+	if file, ok := me.jstmplinfos[name]; ok {
+
+		path := me.setupinfo.RootFolder + file
+		filename := filepath.Base(path)
+		tmpl, err := template.New(filename).Delims(delimLeft, delimRight).ParseFiles(path)
+		if err != nil {
+			log.Panicf("error %s\n", err.Error())
+			return template.HTML("<!--[ERROR] JsTmpl  (JsTmplWithViewData) " + name + " err=" + err.Error() + "  -->")
+		}
+
+		var content bytes.Buffer
+		err = tmpl.Execute(&content, data)
+		if err != nil {
+			log.Panicf("error %s\n", err.Error())
+			return template.HTML("<!--[ERROR] JsTmpl  (JsTmplWithViewData) " + name + " err=" + err.Error() + "  -->")
+		}
+
+		var buff bytes.Buffer
+		buff.WriteString("\n<script id='" + name + "' type='text/template' >\n")
+		buff.WriteString(content.String())
+		buff.WriteString("\n</script>\n")
+		return template.HTML(buff.String())
+
+	}
+
+	return template.HTML("<!--[ERROR] not found JsTmpl (JsTmplWithViewData) " + name + " -->")
 }
 
 func (me *WebInit) JsTmpl(data interface{}, name string) template.HTML {
