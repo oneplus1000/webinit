@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sendo/sdlog"
+
+	"github.com/oneplus1000/webinit/sdlog"
 )
 
 var respformat = "{ \"data\" : %s ,  \"errmsg\" : \"%s\", \"errcode\" : %d   }"

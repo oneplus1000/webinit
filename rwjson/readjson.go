@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"sendo/sdlog"
+
+	"github.com/oneplus1000/webinit/sdlog"
 )
 
 func StringUnmarshalBody(r *http.Request) (string, error) {
