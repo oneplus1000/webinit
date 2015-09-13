@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+//standard log
 var logpath string
 
 func SdLogSetup(dirpath string) {
