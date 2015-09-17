@@ -8,7 +8,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var DocNameTxn = "txn"
+//var DocNameTxn = "txn"
 
 type DbSetup struct {
 	Host   string
